@@ -7,19 +7,19 @@ import (
 )
 
 type Cache struct {
-	item map[string]interface{}
-	mu   sync.Mutex
+	items map[string]interface{}
+	mu    sync.Mutex
 }
 
 func New() *Cache {
 	return &Cache{
-		item: make(map[string]interface{}),
+		items: make(map[string]interface{}),
 	}
 }
 
 func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 	c.mu.Lock()
-	c.item[key] = value
+	c.items[key] = value
 	go func() {
 		time.Sleep(ttl)
 		c.Delete(key)
@@ -28,7 +28,7 @@ func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 }
 
 func (c *Cache) Get(key string) (interface{}, error) {
-	if value, ok := c.item[key]; ok {
+	if value, ok := c.items[key]; ok {
 		return value, nil
 	}
 
@@ -36,5 +36,5 @@ func (c *Cache) Get(key string) (interface{}, error) {
 }
 
 func (c *Cache) Delete(key string) {
-	delete(c.item, key)
+	delete(c.items, key)
 }

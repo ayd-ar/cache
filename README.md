@@ -13,9 +13,9 @@ import (
 
 func main() {
 	cache := cache.New()
-	cache.Set("Pi", 3.14, time.Second*5)
+	cache.Set("userID", 42, time.Second * 5)
 
-	value, err := cache.Get("Pi")
+	value, err := cache.Get("userID")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -24,7 +24,7 @@ func main() {
 
 	time.Sleep(time.Second * 6)
 
-	value, err = cache.Get("Pi")
+	value, err = cache.Get("userID")
 	if err != nil {
 		log.Fatal(err)
 	}
