@@ -2,11 +2,13 @@ package cache
 
 import (
 	"errors"
+	"sync"
 	"time"
 )
 
 type Cache struct {
 	item map[string]interface{}
+	mu   sync.Mutex
 }
 
 func New() *Cache {
@@ -16,11 +18,13 @@ func New() *Cache {
 }
 
 func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
+	c.mu.Lock()
 	c.item[key] = value
 	go func() {
 		time.Sleep(ttl)
-		delete(c.item, key)
+		c.Delete(key)
 	}()
+	c.mu.Unlock()
 }
 
 func (c *Cache) Get(key string) (interface{}, error) {
