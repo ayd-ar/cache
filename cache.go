@@ -8,7 +8,7 @@ import (
 
 type Cache struct {
 	items map[string]interface{}
-	mu    sync.Mutex
+	mu    sync.RWMutex
 }
 
 func New() *Cache {
@@ -28,13 +28,17 @@ func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 }
 
 func (c *Cache) Get(key string) (interface{}, error) {
+	c.mu.RLock()
 	if value, ok := c.items[key]; ok {
 		return value, nil
 	}
+	defer c.mu.RUnlock()
 
 	return nil, errors.New("no such key")
 }
 
 func (c *Cache) Delete(key string) {
+	c.mu.Lock()
 	delete(c.items, key)
+	c.mu.Unlock()
 }
