@@ -7,38 +7,53 @@ import (
 )
 
 type Cache struct {
-	items map[string]interface{}
+	items map[string]item
 	mu    sync.RWMutex
 }
 
+type item struct {
+	value interface{}
+	ttl   int64
+}
+
 func New() *Cache {
-	return &Cache{
-		items: make(map[string]interface{}),
-	}
+	cache := &Cache{items: make(map[string]item)}
+	go cache.scanCache()
+	return cache
 }
 
-func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
-	c.mu.Lock()
-	c.items[key] = value
-	go func() {
-		time.Sleep(ttl)
-		c.Delete(key)
-	}()
-	c.mu.Unlock()
+func (r *Cache) Set(key string, value interface{}, ttl time.Duration) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.items[key] = item{value, time.Now().Add(ttl).Unix()}
 }
 
-func (c *Cache) Get(key string) (interface{}, error) {
-	c.mu.RLock()
-	if value, ok := c.items[key]; ok {
-		return value, nil
+func (r *Cache) Get(key string) (interface{}, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if item, ok := r.items[key]; ok {
+		return item.value, nil
 	}
-	defer c.mu.RUnlock()
 
 	return nil, errors.New("no such key")
 }
 
-func (c *Cache) Delete(key string) {
-	c.mu.Lock()
-	delete(c.items, key)
-	c.mu.Unlock()
+func (r *Cache) Delete(key string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.items, key)
+}
+
+func (r *Cache) scanCache() {
+	for {
+		r.clean()
+	}
+}
+
+func (r *Cache) clean() {
+	for key, value := range r.items {
+		if time.Now().Unix() > value.ttl {
+			r.Delete(key)
+		}
+	}
 }
